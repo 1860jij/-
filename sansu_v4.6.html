@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>さんすうゲーム</title>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f9fc;
+  --white:#fff;
+  --text:#333;
+  --muted:#999;
+  --border:#e8e8e8;
+  --yellow:#FFD43B;
+  --orange:#FF8C42;
+  --pink:#FF6B9D;
+  --blue:#4DABF7;
+  --green:#40C057;
+  --red:#FA5252;
+  --purple:#CC5DE8;
+  --shadow:0 2px 10px rgba(0,0,0,0.08);
+}
+html,body{
+  width:100%;height:100%;
+  background:var(--bg);
+  font-family:'M PLUS Rounded 1c',sans-serif;
+  overflow:hidden;
+}
+
+/* ══════════════════════════════
+   SCREENS
+══════════════════════════════ */
+.screen{
+  display:none;
+  width:100%;height:100vh;
+  padding:16px 24px;
+}
+.screen.active{display:flex;}
+
+/* ══════════════════════════════
+   HOME — 左:タイトル+もード選択 / 右:スタート
+══════════════════════════════ */
+#home{
+  flex-direction:row;
+  align-items:stretch;
+  gap:24px;
+}
+.home-left{
+  flex:1;
+  display:flex;flex-direction:column;
+  justify-content:center;gap:14px;
+}
+.home-right{
+  width:220px;
+  display:flex;flex-direction:column;
+  justify-content:center;align-items:center;gap:20px;
+}
+
+.title{font-size:30px;font-weight:800;color:var(--text);line-height:1.4}
+.title span{color:var(--orange)}
+
+.mode-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:10px;
+}
+.mcard{
+  background:var(--white);border:2.5px solid var(--border);border-radius:14px;
+  padding:16px 8px 12px;cursor:pointer;text-align:center;
+  transition:border-color 0.15s,transform 0.15s,box-shadow 0.15s;
+  box-shadow:var(--shadow);
+}
+.mcard:hover{transform:translateY(-2px);box-shadow:0 5px 16px rgba(0,0,0,0.1)}
+.mcard.sel{border-width:3px}
+.mc1.sel{border-color:var(--yellow)}
+.mc2.sel{border-color:var(--blue)}
+.mc3.sel{border-color:var(--pink)}
+.mc4.sel{border-color:var(--green)}
+.mc5.sel{border-color:var(--purple)}
+.mc6.sel{border-color:var(--orange)}
+.mcard-icon{font-size:30px;display:block;margin-bottom:6px}
+.mcard-name{font-size:17px;font-weight:700;color:var(--text);line-height:1.6}
+.badge{display:inline-block;font-size:13px;padding:3px 9px;border-radius:20px;margin-top:5px;font-weight:700}
+.be{background:#e8f8ec;color:#2b8a3e}
+.bm{background:#e7f5ff;color:#1864ab}
+.bh{background:#fff0f6;color:#a61e4d}
+
+.home-hint{font-size:17px;color:var(--muted);text-align:center}
+.start-btn{
+  background:linear-gradient(135deg,var(--orange),var(--pink));
+  color:#fff;border:none;border-radius:50px;
+  padding:18px 0;width:210px;
+  font-size:26px;font-weight:800;font-family:'M PLUS Rounded 1c',sans-serif;
+  cursor:pointer;box-shadow:0 4px 16px rgba(255,107,157,0.35);
+  transition:transform 0.15s,opacity 0.15s;
+}
+.start-btn:not(:disabled):hover{transform:scale(1.04)}
+.start-btn:disabled{opacity:0.35;cursor:default}
+
+/* ══════════════════════════════
+   GAME — 左:もんだい / 右:テンキー
+══════════════════════════════ */
+#game{
+  flex-direction:row;
+  align-items:stretch;
+  gap:20px;
+}
+.game-left{
+  flex:1;
+  display:flex;flex-direction:column;
+  justify-content:space-between;
+  gap:10px;
+}
+.game-right{
+  width:280px;
+  display:flex;flex-direction:column;
+  justify-content:center;
+  gap:10px;
+}
+
+/* HUD bar */
+.g-hud{
+  display:flex;align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.back-btn{
+  background:var(--white);border:2px solid var(--border);border-radius:50px;
+  padding:6px 16px;font-size:15px;font-weight:700;
+  font-family:'M PLUS Rounded 1c',sans-serif;
+  color:var(--muted);cursor:pointer;box-shadow:var(--shadow);
+  transition:all 0.15s;white-space:nowrap;
+}
+.back-btn:hover{border-color:var(--red);color:var(--red)}
+.g-score{font-size:18px;font-weight:800;color:var(--orange);white-space:nowrap}
+.g-mode-badge{font-size:14px;font-weight:700;color:var(--muted);
+  background:var(--white);padding:5px 14px;border-radius:20px;border:1px solid var(--border)}
+
+/* progress */
+.prog-wrap{display:flex;align-items:center;gap:10px}
+.prog-bar{flex:1;height:12px;background:var(--border);border-radius:8px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--yellow),var(--orange));border-radius:8px;transition:width 0.4s}
+.prog-txt{font-size:14px;color:var(--muted);font-weight:700;white-space:nowrap}
+
+/* stars */
+.stars-row{
+  display:flex;gap:6px;justify-content:center;align-items:center;
+  width:100%;padding:2px 0;
+}
+.ss{font-size:22px;filter:grayscale(1) opacity(0.2);}
+.ss.lit-gold{filter:none;color:#FFD43B;}
+.ss.lit-blue{filter:none;color:#4DABF7;}
+
+/* question card */
+.qcard{
+  flex:1;
+  background:var(--white);border:2px solid var(--border);border-radius:20px;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:16px 20px;text-align:center;
+  box-shadow:var(--shadow);position:relative;
+  min-height:0;
+}
+.qcard-n{position:absolute;top:12px;right:16px;font-size:14px;color:var(--muted);font-weight:700}
+.qbig{font-size:72px;font-weight:800;color:var(--text);letter-spacing:6px;line-height:1}
+.op-p{color:var(--orange)}.op-m{color:var(--blue)}
+.fb{font-size:24px;font-weight:800;min-height:34px;margin-top:8px}
+.fb-ok{color:var(--green)}.fb-ng{color:var(--red)}
+
+/* answer display */
+.ans-box{
+  font-size:68px;font-weight:800;
+  background:var(--white);border:3px solid var(--border);border-radius:16px;
+  text-align:center;padding:10px 0;
+  transition:border-color 0.2s,color 0.2s;box-shadow:var(--shadow);
+  width:100%;
+}
+.ans-box.has{border-color:var(--blue);color:var(--blue)}
+.ans-box.empty{color:#ddd}
+
+/* numpad */
+.pad{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  width:100%;
+}
+.pk{
+  background:var(--white);border:2px solid var(--border);border-radius:14px;
+  padding:0;height:72px;
+  font-size:30px;font-weight:700;
+  font-family:'M PLUS Rounded 1c',sans-serif;
+  color:var(--text);cursor:pointer;user-select:none;box-shadow:var(--shadow);
+  transition:background 0.1s,transform 0.1s;
+  display:flex;align-items:center;justify-content:center;
+}
+.pk:hover{background:#f5f5f5}
+.pk:active,.pk.tap{transform:scale(0.9);background:#eee}
+.pk.pdel{font-size:20px;color:var(--red);border-color:#fcc}
+.pk.pok{
+  font-size:18px;font-weight:800;color:var(--white);
+  background:linear-gradient(135deg,var(--green),#2f9e44);
+  border-color:var(--green);line-height:1.4;
+}
+.pk.pok:hover{background:linear-gradient(135deg,#40c057,#2b8a3e)}
+.pk.pw2{grid-column:span 2}
+.pk.ph{visibility:hidden;box-shadow:none;border:none;background:transparent}
+
+/* ══════════════════════════════
+   RESULTS — 左:スコア+メッセージ / 右:ログ
+══════════════════════════════ */
+#results{
+  flex-direction:row;
+  align-items:stretch;
+  gap:24px;
+}
+.res-left{
+  width:280px;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:16px;
+}
+.res-right{
+  flex:1;
+  display:flex;flex-direction:column;
+  justify-content:center;gap:12px;
+}
+
+.res-title{font-size:26px;font-weight:800;color:var(--text);text-align:center}
+.score-ring{
+  width:130px;height:130px;border-radius:50%;
+  background:linear-gradient(135deg,var(--yellow),var(--orange));
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  box-shadow:0 6px 24px rgba(255,140,66,0.35);
+}
+.score-big{font-size:48px;font-weight:800;color:#fff;line-height:1}
+.score-label{font-size:15px;color:rgba(255,255,255,0.8);font-weight:700}
+.res-msg{font-size:18px;font-weight:700;color:var(--text);text-align:center;line-height:1.6}
+.again-btn{
+  background:var(--white);border:2.5px solid var(--blue);color:var(--blue);
+  border-radius:50px;padding:13px 0;width:200px;
+  font-size:19px;font-weight:800;font-family:'M PLUS Rounded 1c',sans-serif;
+  cursor:pointer;box-shadow:var(--shadow);transition:all 0.15s;
+}
+.again-btn:hover{background:var(--blue);color:#fff}
+
+.log-title{font-size:16px;font-weight:800;color:var(--muted)}
+.log-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+  overflow-y:auto;
+  max-height:calc(100vh - 120px);
+}
+.lrow{
+  border-radius:10px;
+  padding:8px 10px;font-size:15px;font-weight:700;text-align:center;
+  box-shadow:var(--shadow);
+}
+.lrow.ok{background:#fff4e6;border:2px solid #ffd8a8;color:#e8590c;}
+.lrow.ng{background:#e7f5ff;border:2px solid #74c0fc;color:#1864ab;}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ═══ HOME ═══ -->
+<div class="screen active" id="home">
+  <div class="home-left">
+    <div class="title">⭐ たしざん・ひきざん<br><span>れんしゅうゲーム</span></div>
+    <div class="mode-grid">
+      <div class="mcard mc1" onclick="pick('t10',this)">
+        <span class="mcard-icon">➕</span>
+        <div class="mcard-name">１０までの<br>たしざん</div>
+        <span class="badge be">かんたん</span>
+      </div>
+      <div class="mcard mc2" onclick="pick('h10',this)">
+        <span class="mcard-icon">➖</span>
+        <div class="mcard-name">１０までの<br>ひきざん</div>
+        <span class="badge be">かんたん</span>
+      </div>
+      <div class="mcard mc3" onclick="pick('mix10',this)">
+        <span class="mcard-icon">🔀</span>
+        <div class="mcard-name">たしひき<br>まぜまぜ</div>
+        <span class="badge bm">ふつう</span>
+      </div>
+      <div class="mcard mc4" onclick="pick('kuri',this)">
+        <span class="mcard-icon">🔼</span>
+        <div class="mcard-name">くりあがりの<br>たしざん</div>
+        <span class="badge bh">むずかしい</span>
+      </div>
+      <div class="mcard mc5" onclick="pick('kusa',this)">
+        <span class="mcard-icon">🔽</span>
+        <div class="mcard-name">くりさがりの<br>ひきざん</div>
+        <span class="badge bh">むずかしい</span>
+      </div>
+      <div class="mcard mc6" onclick="pick('all',this)">
+        <span class="mcard-icon">🌟</span>
+        <div class="mcard-name">ぜんぶ<br>ちゃれんじ</div>
+        <span class="badge bh">さいきょう</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="home-right">
+    <div class="home-hint">もードをえらんでね！</div>
+    <button class="start-btn" id="startBtn" disabled onclick="startGame()">スタート ▶</button>
+  </div>
+</div>
+
+<!-- ═══ GAME ═══ -->
+<div class="screen" id="game">
+  <div class="game-left">
+    <div class="g-hud">
+      <button class="back-btn" onclick="goHome()">← もどる</button>
+      <div class="g-score">⭐ <span id="scoreN">0</span>てん</div>
+      <div class="g-mode-badge" id="gMode">-</div>
+    </div>
+    <div class="stars-row" id="starsRow"></div>
+    <div class="prog-wrap">
+      <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+      <div class="prog-txt" id="progTxt">1 / 10もん</div>
+    </div>
+    <div class="qcard">
+      <div class="qcard-n" id="qNum">1/10</div>
+      <div class="qbig" id="qText">?</div>
+      <div class="fb" id="fb"></div>
+    </div>
+  </div>
+
+  <div class="game-right">
+    <div class="ans-box empty" id="ansBox">？</div>
+    <div class="pad">
+      <button class="pk" onclick="kp(7)">７</button>
+      <button class="pk" onclick="kp(8)">８</button>
+      <button class="pk" onclick="kp(9)">９</button>
+      <button class="pk pdel" onclick="kpD()">けす</button>
+      <button class="pk" onclick="kp(4)">４</button>
+      <button class="pk" onclick="kp(5)">５</button>
+      <button class="pk" onclick="kp(6)">６</button>
+      <button class="pk pok" onclick="kpOK()">こたえ<br>あわせ</button>
+      <button class="pk" onclick="kp(1)">１</button>
+      <button class="pk" onclick="kp(2)">２</button>
+      <button class="pk" onclick="kp(3)">３</button>
+      <button class="pk ph"></button>
+      <button class="pk pw2" onclick="kp(0)">０</button>
+      <button class="pk ph"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ RESULTS ═══ -->
+<div class="screen" id="results">
+  <div class="res-left">
+    <div class="res-title">🎉 けっか！</div>
+    <div class="score-ring">
+      <div class="score-big" id="resScore">0</div>
+      <div class="score-label">/ 10てん</div>
+    </div>
+    <div class="res-msg" id="resMsg"></div>
+    <button class="again-btn" onclick="goHome()">↩ もういちど</button>
+  </div>
+  <div class="res-right">
+    <div class="log-title">もんだいのきろく</div>
+    <div class="log-grid" id="logGrid"></div>
+  </div>
+</div>
+
+</div>
+<script>
+let mode=null,qs=[],qi=0,ans='',score=0,logs=[],waiting=false,missedThisQ=false;
+const modeNames={t10:'たしざん',h10:'ひきざん',mix10:'まぜまぜ',kuri:'くりあがり',kusa:'くりさがり',all:'ちゃれんじ'};
+
+function pick(m,el){
+  mode=m;
+  document.querySelectorAll('.mcard').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('startBtn').disabled=false;
+}
+
+function r(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+
+// 問題の種別ごとにすべての候補を列挙して重複なしで10問選ぶ
+function allCandidates(m){
+  const list=[];
+  if(m==='t10'){
+    for(let a=1;a<=9;a++)for(let b=1;b<=10-a;b++)list.push({a,op:'+',b,ca:a+b});
+  } else if(m==='h10'){
+    for(let a=2;a<=10;a++)for(let b=1;b<a;b++)list.push({a,op:'-',b,ca:a-b});
+  } else if(m==='kuri'){
+    // a+b > 10かつ答えが11〜18（10は除外）
+    for(let a=2;a<=9;a++)for(let b=2;b<=9;b++)if(a+b>10&&a+b<=18)list.push({a,op:'+',b,ca:a+b});
+  } else if(m==='kusa'){
+    for(let a=11;a<=18;a++)for(let b=a-9;b<=a-1;b++)if(a-b>=1)list.push({a,op:'-',b,ca:a-b});
+  } else if(m==='mix10'){
+    for(let a=1;a<=9;a++)for(let b=1;b<=10-a;b++)list.push({a,op:'+',b,ca:a+b});
+    for(let a=2;a<=10;a++)for(let b=1;b<a;b++)list.push({a,op:'-',b,ca:a-b});
+  } else if(m==='all'){
+    for(let a=1;a<=9;a++)for(let b=1;b<=10-a;b++)list.push({a,op:'+',b,ca:a+b});
+    for(let a=2;a<=10;a++)for(let b=1;b<a;b++)list.push({a,op:'-',b,ca:a-b});
+    for(let a=2;a<=9;a++)for(let b=2;b<=9;b++)if(a+b>10&&a+b<=18)list.push({a,op:'+',b,ca:a+b});
+    for(let a=11;a<=18;a++)for(let b=a-9;b<=a-1;b++)if(a-b>=1)list.push({a,op:'-',b,ca:a-b});
+  }
+  return list;
+}
+
+function buildQuestions(m){
+  const pool=allCandidates(m);
+  // シャッフル
+  for(let i=pool.length-1;i>0;i--){const j=r(0,i);[pool[i],pool[j]]=[pool[j],pool[i]];}
+  // 10問以上ある場合は先頭10問、足りない場合は全部使う
+  const base=pool.slice(0,Math.min(10,pool.length));
+  // 連続する答えが同じにならないよう並べ直す
+  return shuffleNoConsecAnswer(base);
+}
+
+function shuffleNoConsecAnswer(arr){
+  // 最大50回試みて連続する答えが同じにならない順序を探す
+  for(let attempt=0;attempt<50;attempt++){
+    let ok=true;
+    for(let i=1;i<arr.length;i++){
+      if(arr[i].ca===arr[i-1].ca){ok=false;break;}
+    }
+    if(ok)return arr;
+    // 最初の違反箇所を後方と交換
+    for(let i=1;i<arr.length;i++){
+      if(arr[i].ca===arr[i-1].ca){
+        for(let j=i+1;j<arr.length;j++){
+          if(arr[j].ca!==arr[i-1].ca){[arr[i],arr[j]]=[arr[j],arr[i]];break;}
+        }
+        break;
+      }
+    }
+  }
+  return arr;
+}
+
+function buildStars(){
+  const row=document.getElementById('starsRow');
+  // 既存の要素をすべて削除してから再生成（バグ修正：innerHTML=''で確実にリセット）
+  row.innerHTML='';
+  for(let i=0;i<10;i++){
+    const s=document.createElement('span');
+    s.className='ss';
+    s.id='ss'+i;
+    s.textContent='⭐';
+    row.appendChild(s);
+  }
+}
+
+function startGame(){
+  if(!mode)return;
+  qs=buildQuestions(mode);
+  qi=0;ans='';score=0;logs=[];waiting=false;missedThisQ=false;
+  buildStars();
+  show('game');
+  document.getElementById('gMode').textContent=modeNames[mode];
+  renderQ();
+}
+
+function renderQ(){
+  const q=qs[qi];
+  document.getElementById('qNum').textContent=(qi+1)+'/10';
+  document.getElementById('progTxt').textContent=qi+' / 10もん おわった';
+  document.getElementById('progFill').style.width=(qi/10*100)+'%';
+  document.getElementById('scoreN').textContent=score;
+  const p=q.op==='+';
+  document.getElementById('qText').innerHTML=
+    `${q.a} <span class="${p?'op-p':'op-m'}">${p?'＋':'－'}</span> ${q.b} ＝`;
+  document.getElementById('fb').textContent='';
+  document.getElementById('fb').className='fb';
+  missedThisQ=false;
+  ans='';upAns();
+}
+
+function upAns(){
+  const b=document.getElementById('ansBox');
+  b.textContent=ans||'？';
+  b.className='ans-box '+(ans?'has':'empty');
+}
+
+function kp(n){if(ans.length>=3||waiting)return;ans+=n;upAns();flash(n);}
+function kpD(){if(waiting)return;ans=ans.slice(0,-1);upAns();}
+function flash(n){
+  document.querySelectorAll('.pk').forEach(b=>{
+    if(b.textContent.trim()===String(n)||b.textContent.trim()==='０'&&n===0){
+      b.classList.add('tap');setTimeout(()=>b.classList.remove('tap'),150);
+    }
+  });
+}
+
+function kpOK(){
+  if(!ans||waiting)return;
+  const q=qs[qi],ua=parseInt(ans);
+  const fb=document.getElementById('fb');
+  if(ua===q.ca){
+    fb.textContent='⭕ せいかい！';fb.className='fb fb-ok';
+    const firstTry=!missedThisQ;
+    const s=document.getElementById('ss'+qi);
+    if(firstTry){
+      // 初回正解：金色の星
+      score++;
+      document.getElementById('scoreN').textContent=score;
+      if(s){s.classList.remove('lit-blue');s.classList.add('lit-gold');}
+    } else {
+      // ミス後に正解：水色の星
+      if(s){s.classList.remove('lit-gold');s.classList.add('lit-blue');}
+    }
+    logs.push({q:`${q.a}${q.op}${q.b}`,ok:firstTry,ca:q.ca});
+    setTimeout(()=>{qi++;qi<10?renderQ():showRes();},1000);
+  }else{
+    missedThisQ=true;
+    waiting=true;
+    fb.textContent='おしい！';fb.className='fb fb-ng';
+    setTimeout(()=>{
+      fb.textContent='';fb.className='fb';
+      ans='';upAns();
+      waiting=false;
+    },2000);
+  }
+}
+
+function showRes(){
+  show('results');
+  const perfect=logs.filter(l=>l.ok).length;
+  document.getElementById('resScore').textContent=perfect;
+  const m=['もういっかいがんばろう！💪','すこしできたね😊','なかなかいいね！👍','よくできました！✨','ほぼパーフェクト！🌟','10もんぜんぶせいかい！🎉🎉🎉'];
+  document.getElementById('resMsg').textContent=m[perfect===10?5:perfect<2?0:perfect<4?1:perfect<6?2:perfect<9?3:4];
+  const g=document.getElementById('logGrid');g.innerHTML='';
+  logs.forEach(l=>{
+    const d=document.createElement('div');d.className='lrow '+(l.ok?'ok':'ng');
+    d.textContent=(l.ok?'⭕ ':'❌ ')+l.q+'='+l.ca;g.appendChild(d);
+  });
+}
+
+function goHome(){show('home');}
+function show(s){document.querySelectorAll('.screen').forEach(e=>e.classList.toggle('active',e.id===s));}
+
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('game').classList.contains('active'))return;
+  if(e.key>='0'&&e.key<='9')kp(+e.key);
+  else if(e.key==='Backspace')kpD();
+  else if(e.key==='Enter')kpOK();
+});
+</script>
+</body>
+</html>
